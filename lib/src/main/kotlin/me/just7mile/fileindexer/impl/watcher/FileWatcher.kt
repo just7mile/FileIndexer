@@ -6,22 +6,29 @@ import kotlinx.coroutines.channels.Channel
 import me.just7mile.fileindexer.FileChangedEventType
 import java.nio.file.*
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.isRegularFile
 
 /**
  * A single file watcher.
  */
 internal class FileWatcher(path: Path) : WatcherBase(path, Channel(Channel.CONFLATED)) {
+  init {
+    require(path.isRegularFile()) { "Provided path is not a file." }
+  }
+
   private val watchScope = CoroutineScope(Dispatchers.IO)
   private val watchService: WatchService = FileSystems.getDefault().newWatchService()
 
-  private val registeredKey = path.parent
-    .register(
-      watchService, arrayOf(
-        StandardWatchEventKinds.ENTRY_CREATE,
-        StandardWatchEventKinds.ENTRY_DELETE,
-        StandardWatchEventKinds.ENTRY_MODIFY
-      ), SensitivityWatchEventModifier.HIGH
-    )
+  // Parent folder is registered because [WatchService] works only with folders.
+  private val registeredKey = path.parent.register(
+    watchService,
+    arrayOf(
+      StandardWatchEventKinds.ENTRY_CREATE,
+      StandardWatchEventKinds.ENTRY_DELETE,
+      StandardWatchEventKinds.ENTRY_MODIFY
+    ),
+    SensitivityWatchEventModifier.HIGH
+  )
 
   private val absolutePathString: String
     get() = path.absolutePathString()

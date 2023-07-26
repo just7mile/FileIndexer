@@ -12,6 +12,9 @@ import kotlin.io.path.isDirectory
  * Recursive directory watcher.
  */
 internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
+  init {
+    require(path.isDirectory()) { "Provided path is not a directory." }
+  }
 
   private val watchScope = CoroutineScope(Dispatchers.IO)
   private val watchService: WatchService = FileSystems.getDefault().newWatchService()
@@ -66,9 +69,9 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
           StandardWatchEventKinds.ENTRY_DELETE -> FileChangedEventType.DELETED
           else -> FileChangedEventType.MODIFIED
         }
-        channel.send(FileChangedEventImpl(changedPath, eventType))
 
         if (changedPath.isDirectory() && eventType in treeChangeEventType) registerKeys()
+        channel.send(FileChangedEventImpl(changedPath, eventType))
       }
 
       watchingKey.reset()

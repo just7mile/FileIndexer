@@ -22,6 +22,23 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
   private val registeredKeys = mutableListOf<WatchKey>()
   private val treeChangeEventType = listOf(FileChangedEventType.CREATED, FileChangedEventType.DELETED)
 
+  private val fileVisitor = object : SimpleFileVisitor<Path>() {
+    override fun preVisitDirectory(dir: Path?, attrs: BasicFileAttributes?): FileVisitResult {
+      dir?.let {
+        registeredKeys += it.register(
+          watchService,
+          arrayOf(
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_DELETE,
+            StandardWatchEventKinds.ENTRY_MODIFY
+          ),
+          SensitivityWatchEventModifier.HIGH
+        )
+      }
+      return FileVisitResult.CONTINUE
+    }
+  }
+
   init {
     registerKeys()
     watch()
@@ -30,22 +47,7 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
   private fun registerKeys() {
     resetKeys()
 
-    Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
-      override fun preVisitDirectory(dir: Path?, attrs: BasicFileAttributes?): FileVisitResult {
-        dir?.let {
-          registeredKeys += it.register(
-            watchService,
-            arrayOf(
-              StandardWatchEventKinds.ENTRY_CREATE,
-              StandardWatchEventKinds.ENTRY_DELETE,
-              StandardWatchEventKinds.ENTRY_MODIFY
-            ),
-            SensitivityWatchEventModifier.HIGH
-          )
-        }
-        return FileVisitResult.CONTINUE
-      }
-    })
+    Files.walkFileTree(path, fileVisitor)
   }
 
   @OptIn(DelicateCoroutinesApi::class)
@@ -62,19 +64,21 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
       if (isClosedForSend) break
 
       val watchingDir = watchingKey.watchable() as? Path ?: break
-      watchingKey.pollEvents().forEach { changeEvent ->
+      var hasTreeChanged = false
+      val events = watchingKey.pollEvents().map { changeEvent ->
         val changedPath = watchingDir.resolve(changeEvent.context() as Path)
         val eventType = when (changeEvent.kind()) {
           StandardWatchEventKinds.ENTRY_CREATE -> FileChangedEventType.CREATED
           StandardWatchEventKinds.ENTRY_DELETE -> FileChangedEventType.DELETED
           else -> FileChangedEventType.MODIFIED
         }
-
-        if (changedPath.isDirectory() && eventType in treeChangeEventType) registerKeys()
-        channel.send(FileChangedEventImpl(changedPath, eventType))
+        if (changedPath.isDirectory() && eventType in treeChangeEventType) hasTreeChanged = true
+        FileChangedEventImpl(changedPath, eventType)
       }
-
       watchingKey.reset()
+
+      if (hasTreeChanged) registerKeys()
+      events.forEach { channel.send(it) }
     }
   }
 

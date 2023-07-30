@@ -8,20 +8,6 @@ import java.nio.file.Path
  */
 interface FileIndexer {
   /**
-   * Sets the lexer for parsing a file into words.
-   *
-   * @param lexer the new word lexer.
-   */
-  fun setWordLexer(lexer: WordLexer)
-
-  /**
-   * Sets the watch service used for watching files and directory changes.
-   *
-   * @param service the new watch service.
-   */
-  fun setFileSystemWatchService(service: FileSystemWatchService)
-
-  /**
    * Returns current state of the indexer.
    */
   fun getCurrentState(): FileIndexerState

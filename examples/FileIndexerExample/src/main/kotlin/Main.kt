@@ -1,5 +1,5 @@
 import kotlinx.coroutines.runBlocking
-import me.just7mile.fileindexer.InvertedIndexFileIndexer
+import me.just7mile.fileindexer.FileIndexerBuilder
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 
@@ -10,7 +10,7 @@ fun main() = runBlocking {
   val folder = Path.of(folderPath)
   println("Starting indexer for the files inside '${folder.absolutePathString()}'")
 
-  val indexer = InvertedIndexFileIndexer()
+  val indexer = FileIndexerBuilder().build()
   indexer.start(listOf(folder))
 
   println("Indexer is ready!")

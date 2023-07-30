@@ -1,13 +1,11 @@
-package me.just7mile.fileindexer
+package me.just7mile.fileindexer.impl
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.just7mile.fileindexer.impl.WordLexerImpl
-import me.just7mile.fileindexer.impl.WordSearchResultImpl
-import me.just7mile.fileindexer.impl.isPlainTextFile
+import me.just7mile.fileindexer.*
 import me.just7mile.fileindexer.impl.watcher.FileSystemWatchServiceImpl
 import java.io.File
 import java.nio.file.Path
@@ -20,7 +18,22 @@ import kotlin.io.path.listDirectoryEntries
 /**
  * Implementation of [FileIndexer] using inverted index.
  */
-class InvertedIndexFileIndexer : FileIndexer {
+class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndexer {
+  /**
+   * The lexer for parsing a file into words.
+   */
+  private val wordLexer: WordLexer
+
+  /**
+   * The file system watcher for watching file and directory changes.
+   */
+  private var watchService: FileSystemWatchService
+
+  init {
+    wordLexer = builder.wordLexer ?: WordLexerImpl
+    watchService = builder.watchService ?: FileSystemWatchServiceImpl
+  }
+
   /**
    * Scope for indexer coroutines.
    */
@@ -42,16 +55,6 @@ class InvertedIndexFileIndexer : FileIndexer {
   private val pathsToIndex = mutableListOf<Path>()
 
   /**
-   * The lexer for parsing a file into words.
-   */
-  private var wordLexer: WordLexer = WordLexerImpl
-
-  /**
-   * The file system watcher for watching file and directory changes.
-   */
-  private var watchService: FileSystemWatchService = FileSystemWatchServiceImpl
-
-  /**
    * Current state of the indexer.
    */
   private var currentState = FileIndexerState.CREATED
@@ -60,14 +63,6 @@ class InvertedIndexFileIndexer : FileIndexer {
    * Mutex for controlling [currentState] access.
    */
   private val currentStateMutex = Mutex()
-
-  override fun setWordLexer(lexer: WordLexer) {
-    wordLexer = lexer
-  }
-
-  override fun setFileSystemWatchService(service: FileSystemWatchService) {
-    watchService = service
-  }
 
   override fun getCurrentState(): FileIndexerState = currentState
 

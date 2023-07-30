@@ -1,7 +1,10 @@
-package me.just7mile.fileindexer
+package me.just7mile.fileindexer.impl
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
+import me.just7mile.fileindexer.FileIndexerBuilder
+import me.just7mile.fileindexer.FileIndexerState
+import me.just7mile.fileindexer.TestFolderProvider
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.Test
@@ -13,7 +16,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun startFunctionChecksIfProvidedPathExists() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       val file = testFolder.resolve("file.txt")
 
       assertThrows<IllegalArgumentException> { fileIndexer.start(listOf(file.toPath())) }
@@ -23,7 +26,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun startFunctionChecksIfProvidedPathIsPlainText() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       val file = testFolder.resolve("file.mp3")
 
       assertThrows<IllegalArgumentException> { fileIndexer.start(listOf(file.toPath())) }
@@ -32,7 +35,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
 
   @Test
   fun startFunctionFailsIfIndexerWasCanceled() = runTest {
-    val fileIndexer = InvertedIndexFileIndexer()
+    val fileIndexer = FileIndexerBuilder().build()
 
     fileIndexer.start()
     fileIndexer.cancel()
@@ -43,7 +46,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun addPathFunctionCanBeInvokedBeforeStart() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
 
       val file = testFolder.resolve("file.txt")
         .apply { assertTrue("creates file.txt") { createNewFile() } }
@@ -57,7 +60,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun addPathFunctionFailsIfIndexerWasCanceled() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
 
       fileIndexer.start()
       fileIndexer.cancel()
@@ -74,7 +77,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun removePathFunctionCanBeInvokedBeforeStart() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertDoesNotThrow { fileIndexer.removePath(testFolder.resolve("file.txt").toPath()) }
     }
   }
@@ -82,7 +85,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun removePathFunctionFailsIfIndexerWasCanceled() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
 
       fileIndexer.start()
       fileIndexer.cancel()
@@ -93,20 +96,20 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
 
   @Test
   fun searchWordFunctionFailsIfIndexerIsNotReady() = runTest {
-    val fileIndexer = InvertedIndexFileIndexer()
+    val fileIndexer = FileIndexerBuilder().build()
 
     assertThrows<IllegalStateException> { fileIndexer.searchWord("Hello") }
   }
 
   @Test
   fun cancelFunctionFailsIfIndexerWasNotStartedFirst() = runTest {
-    val fileIndexer = InvertedIndexFileIndexer()
+    val fileIndexer = FileIndexerBuilder().build()
     assertThrows<IllegalStateException> { fileIndexer.cancel() }
   }
 
   @Test
   fun cancelFunctionFailsIfIndexerWasAlreadyCanceled() = runTest {
-    val fileIndexer = InvertedIndexFileIndexer()
+    val fileIndexer = FileIndexerBuilder().build()
     fileIndexer.start()
     fileIndexer.cancel()
     assertThrows<IllegalStateException> { fileIndexer.cancel() }
@@ -118,7 +121,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       val file = testFolder.resolve("file.mp3")
         .apply { assertTrue("creates file.mp3") { createNewFile() } }
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(testFolder.toPath()))
@@ -140,7 +143,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
         .apply { assertTrue("creates file.txt") { createNewFile() } }
       file.writeText("Hello World")
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(file.toPath()))
@@ -174,7 +177,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
         .apply { assertTrue("creates file-2.txt") { createNewFile() } }
       file2.writeText("World World")
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(testFolder.toPath()))
@@ -212,7 +215,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun indexesPathAddedAfterStart() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start()
@@ -243,7 +246,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
         .apply { assertTrue("creates file.txt") { createNewFile() } }
       file.writeText("Hello World")
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(file.toPath()))
@@ -266,7 +269,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun indexesCreatedPathAfterStart() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(testFolder.toPath()))
@@ -297,7 +300,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
         .apply { assertTrue("creates file.txt") { createNewFile() } }
       file.writeText("Hello World")
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(file.toPath()))
@@ -324,7 +327,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
         .apply { assertTrue("creates file.txt") { createNewFile() } }
       file.writeText("Hello World\n")
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(testFolder.toPath()))
@@ -351,7 +354,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun updatesIndexesOfChangedNestedFiles() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(testFolder.toPath()))
@@ -389,7 +392,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
   @Test
   fun canAddPathsConcurrently() = withTestFolder { testFolder ->
     runTest {
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start()
@@ -430,7 +433,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       val folder2 = testFolder.resolve("folder-2")
         .apply { assertTrue("creates folder-2") { mkdir() } }
 
-      val fileIndexer = InvertedIndexFileIndexer()
+      val fileIndexer = FileIndexerBuilder().build()
       assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
 
       fileIndexer.start(listOf(folder1.toPath(), folder2.toPath()))

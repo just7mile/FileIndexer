@@ -8,7 +8,7 @@ import java.nio.file.Files
 /**
  * Implementation of [WordLexer].
  */
-object WordLexerImpl : WordLexer {
+internal object WordLexerImpl : WordLexer {
 
   private val ignoredWords = listOf("is", "the", "am")
 

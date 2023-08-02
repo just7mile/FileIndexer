@@ -12,7 +12,7 @@ import kotlin.io.path.isDirectory
 /**
  * Implementation of [FileSystemWatchService].
  */
-object FileSystemWatchServiceImpl : FileSystemWatchService {
+internal object FileSystemWatchServiceImpl : FileSystemWatchService {
 
   /**
    * A Map storing references to [WatcherBase] for each path.

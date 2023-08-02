@@ -18,7 +18,7 @@ import kotlin.io.path.listDirectoryEntries
 /**
  * Implementation of [FileIndexer] using inverted index.
  */
-class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndexer {
+internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndexer {
   /**
    * The lexer for parsing a file into words.
    */

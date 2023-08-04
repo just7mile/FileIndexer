@@ -5,13 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1c653824-8692-494e-acaa-777dce03fde0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/libs/file-indexer-1.0-SNAPSHOT.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Main.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexer.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexerState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexerState.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexer.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/WordLexerImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/WordLexerImpl.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/watcher/FileSystemWatchServiceImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/watcher/FileSystemWatchServiceImpl.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/watcher/DirWatcher.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/watcher/DirWatcher.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/test/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexerTest.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/test/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexerTest.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,24 +30,24 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 0
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
   <component name="ProjectId" id="2THJ55HOERW6rGQLWwGFm35CCOn" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/just7mile/workspace/FileIndexer/examples/FileIndexerExample/libs",
-    "show.migrate.to.gradle.popup": "false"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/just7mile/workspace/FileIndexer/examples/FileIndexerExample/libs&quot;,
+    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/libs" />

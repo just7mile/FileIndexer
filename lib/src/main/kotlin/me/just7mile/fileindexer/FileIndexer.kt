@@ -10,7 +10,7 @@ interface FileIndexer {
   /**
    * Returns current state of the indexer.
    */
-  fun getCurrentState(): FileIndexerState
+  suspend fun getCurrentState(): FileIndexerState
 
   /**
    * Starts the indexing process.
@@ -40,7 +40,7 @@ interface FileIndexer {
    * @param word to search (case-insensitive).
    * @return list of [WordSearchResult] which contains file and list of locations of the [word] in the file.
    */
-  fun searchWord(word: String): List<WordSearchResult>
+  suspend fun searchWord(word: String): List<WordSearchResult>
 
   /**
    * Cancels the indexer.

@@ -8,11 +8,10 @@ fun main() = runBlocking {
 
   val folderPath = readln()
   val folder = Path.of(folderPath)
-  println("Starting indexer for the files inside '${folder.absolutePathString()}'")
-
   val indexer = FileIndexerBuilder().build()
-  indexer.start(listOf(folder))
 
+  println("Initializing indexer for the files inside '${folder.absolutePathString()}' ...")
+  indexer.start(listOf(folder))
   println("Indexer is ready!")
 
   println("\nType a word to search (or :q to quit): ")

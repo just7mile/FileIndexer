@@ -376,7 +376,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       assertEquals(1, searchResult.size, "search found 1 result")
       assertEquals(3, searchResult.first().locations.size, "3 locations in file.txt")
 
-      assertTrue("deletes file.txt") { file.delete() }
+      assertTrue("deletes root-folder") { rootFolder.deleteRecursively() }
 
       waitForWatchService()
 
@@ -384,8 +384,6 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       assertEquals(0, searchResult.size, "search did not find any results")
 
       fileIndexer.cancel()
-
-      assertTrue("deletes root-folder") { rootFolder.delete() }
     }
   }
 
@@ -477,6 +475,67 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       assertTrue("search result is empty") { searchResult.isEmpty() }
 
       fileIndexer.cancel()
+    }
+  }
+
+  @Test
+  fun addPathWaitsForReadyState() = withTestFolder { testFolder ->
+    runTest {
+      val file = testFolder.resolve("file.txt")
+        .apply { assertTrue("creates file.txt") { createNewFile() } }
+      file.writeText("Hello World\n")
+
+      val fileIndexer = FileIndexerBuilder().build()
+      assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
+
+      val addPathDeferred = async { fileIndexer.addPath(file.toPath()) }
+
+      assertThrows<IllegalStateException>("throws state exception because indexer is not ready")
+      { fileIndexer.searchWord("hello") }
+
+      fileIndexer.start()
+      assertEquals(FileIndexerState.READY, fileIndexer.getCurrentState(), "Indexer is ready")
+
+      addPathDeferred.await()
+
+      val searchResult = fileIndexer.searchWord("wORlD")
+      assertEquals(1, searchResult.size, "search found 1 result")
+      assertEquals(1, searchResult.first().locations.size, "1 location in file.txt")
+
+      fileIndexer.cancel()
+
+      assertTrue("deletes file.txt") { file.delete() }
+    }
+  }
+
+  @Test
+  fun fileNamePrefixedWithAnotherFileNameWontBeDeleted() = withTestFolder { testFolder ->
+    runTest {
+      val file1 = testFolder.resolve("file-1.txt")
+        .apply { assertTrue("creates file-1.txt") { createNewFile() } }
+      file1.writeText("Hello World\n")
+      val file11 = testFolder.resolve("file-1.txt-1.txt")
+        .apply { assertTrue("creates file-1.txt-1.txt") { createNewFile() } }
+      file11.writeText("Hello World\n")
+
+      val fileIndexer = FileIndexerBuilder().build()
+      assertEquals(FileIndexerState.CREATED, fileIndexer.getCurrentState(), "Indexer is in initial state")
+
+      fileIndexer.start(listOf(testFolder.toPath()))
+      assertEquals(FileIndexerState.READY, fileIndexer.getCurrentState(), "Indexer is ready")
+
+      var searchResult = fileIndexer.searchWord("hello")
+      assertEquals(2, searchResult.size, "search found 2 result")
+
+      assertTrue("deletes file-1.txt") { file1.delete() }
+      waitForWatchService()
+
+      searchResult = fileIndexer.searchWord("hello")
+      assertEquals(1, searchResult.size, "search found 1 result")
+
+      fileIndexer.cancel()
+
+      assertTrue("deletes file-1.txt-1.txt") { file11.delete() }
     }
   }
 

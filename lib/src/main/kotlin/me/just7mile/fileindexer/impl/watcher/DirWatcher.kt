@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.Channel
 import me.just7mile.fileindexer.FileChangedEventType
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.io.path.isDirectory
 
 /**
@@ -19,7 +20,7 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
   private val watchScope = CoroutineScope(Dispatchers.IO)
   private val watchService: WatchService = FileSystems.getDefault().newWatchService()
 
-  private val registeredKeys = mutableListOf<WatchKey>()
+  private val registeredKeys = ConcurrentLinkedDeque<WatchKey>()
   private val treeChangeEventType = listOf(FileChangedEventType.CREATED, FileChangedEventType.DELETED)
 
   private val fileVisitor = object : SimpleFileVisitor<Path>() {

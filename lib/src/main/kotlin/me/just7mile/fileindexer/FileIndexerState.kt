@@ -11,11 +11,6 @@ enum class FileIndexerState {
   CREATED,
 
   /**
-   * When indexing files and initializing watcher for the first time.
-   */
-  INITIALIZING,
-
-  /**
    * When indexing files is done, and it is ready for accepting new files or search requests.
    */
   READY,

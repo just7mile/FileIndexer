@@ -10,6 +10,7 @@ import me.just7mile.fileindexer.impl.watcher.FileSystemWatchServiceImpl
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
@@ -50,9 +51,8 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
 
   /**
    * List of files to index.
-   * It is a mutable list, because its content is changed by [addPath] and [removePath] functions.
    */
-  private val pathsToIndex = mutableListOf<Path>()
+  private val pathsToIndex = ConcurrentLinkedDeque<Path>()
 
   /**
    * Current state of the indexer.
@@ -64,7 +64,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
    */
   private val currentStateMutex = Mutex()
 
-  override fun getCurrentState(): FileIndexerState = currentState
+  override suspend fun getCurrentState(): FileIndexerState = currentStateMutex.withLock { currentState }
 
   override suspend fun start(initialPathsToIndex: List<Path>?) {
     initialPathsToIndex?.forEach { validatePath(it) }
@@ -74,42 +74,33 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
         throw IllegalStateException("The indexer is not in the initial state.")
       }
 
-      currentState = FileIndexerState.INITIALIZING
-
       initialPathsToIndex?.let { pathsToIndex.addAll(it) }
-      coroutineScope {
+      scope.async {
         pathsToIndex.forEach {
-          launch(Dispatchers.IO) {
+          launch {
             addPathForIndexing(it)
           }
         }
-      }
+      }.await()
 
       currentState = FileIndexerState.READY
     }
   }
 
   override suspend fun addPath(path: Path) {
-    if (currentState == FileIndexerState.INITIALIZING) {
-      throw IllegalStateException("Adding paths is not allowing during initialization state.")
-    }
-
-    if (currentState == FileIndexerState.CANCELED) {
-      throw IllegalStateException("Adding paths is not allowing after the indexer is canceled.")
-    }
-
     validatePath(path)
+
+    if (getCurrentState() == FileIndexerState.CANCELED) {
+      throw IllegalStateException("Adding paths is not allowed after the indexer is canceled.")
+    }
+
     pathsToIndex.add(path)
-    if (currentState == FileIndexerState.READY) addPathForIndexing(path)
+    if (getCurrentState() == FileIndexerState.READY) addPathForIndexing(path)
   }
 
   override suspend fun removePath(path: Path) {
-    if (currentState == FileIndexerState.INITIALIZING) {
-      throw IllegalStateException("Removing paths is not allowing during initialization state.")
-    }
-
-    if (currentState == FileIndexerState.CANCELED) {
-      throw IllegalStateException("Removing paths not is allowing after the indexer is canceled.")
+    if (getCurrentState() == FileIndexerState.CANCELED) {
+      throw IllegalStateException("Removing paths is not allowed after the indexer is canceled.")
     }
 
     removePathFromIndexing(path)
@@ -119,9 +110,9 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
    * Returns results sorted descending by the number of appearance in a file.
    * Thus, files that contain the word [word] the most are located first.
    */
-  override fun searchWord(word: String): List<WordSearchResult> {
-    if (currentState != FileIndexerState.READY) {
-      throw IllegalStateException("Searching is not allowing til the indexer is ready.")
+  override suspend fun searchWord(word: String): List<WordSearchResult> {
+    if (getCurrentState() != FileIndexerState.READY) {
+      throw IllegalStateException("Searching is not allowed til the indexer is ready.")
     }
 
     return indexes[word.lowercase()]
@@ -140,10 +131,11 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
         throw IllegalStateException("The indexer is already canceled.")
       }
 
-      currentState = FileIndexerState.CANCELED
       watchService.clear()
       indexes.clear()
       scope.cancel()
+
+      currentState = FileIndexerState.CANCELED
     }
   }
 
@@ -202,14 +194,9 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   private fun removePathFromIndexing(path: Path) {
     watchService.stopWatching(path)
 
-    val absolutePath = path.absolutePathString()
-    if (path.isDirectory()) {
-      pathsToIndex.removeIf { it.absolutePathString().startsWith(absolutePath) }
-      removeDirectoryIndexes(absolutePath)
-    } else {
-      pathsToIndex.removeIf { it.absolutePathString() == absolutePath }
-      removeFileIndexes(absolutePath)
-    }
+    val absolutePath = path.toAbsolutePath()
+    pathsToIndex.removeIf { it.toAbsolutePath().startsWith(absolutePath) }
+    removeIndexes(path)
   }
 
   /**
@@ -311,26 +298,15 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   }
 
   /**
-   * Removes file indexes from the [indexes].
-   *
-   * @param absolutePath of the path to remove its indexes.
-   */
-  private fun removeFileIndexes(absolutePath: String) {
-    indexes.forEach { (word, filePathToWordLocations) ->
-      filePathToWordLocations.remove(absolutePath)
-      if (filePathToWordLocations.isEmpty()) indexes.remove(word)
-    }
-  }
-
-  /**
    * Removes directory indexes recursively from the [indexes].
    *
-   * @param absolutePath of the directory to remove its indexes.
+   * @param path of the directory to remove its indexes.
    */
-  private fun removeDirectoryIndexes(absolutePath: String) {
+  private fun removeIndexes(path: Path) {
+    val absolutePath = path.toAbsolutePath()
     indexes.forEach { (word, filePathToWordLocations) ->
       filePathToWordLocations.forEach { (filePath, _) ->
-        if (filePath.startsWith(absolutePath)) filePathToWordLocations.remove(filePath)
+        if (Path.of(filePath).toAbsolutePath().startsWith(absolutePath)) filePathToWordLocations.remove(filePath)
       }
       if (filePathToWordLocations.isEmpty()) indexes.remove(word)
     }

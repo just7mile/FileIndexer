@@ -2,8 +2,7 @@ package me.just7mile.fileindexer.impl.watcher
 
 import com.sun.nio.file.SensitivityWatchEventModifier
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import me.just7mile.fileindexer.FileChangedEventType
+import me.just7mile.fileindexer.FileChangeListener
 import java.nio.file.*
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.isRegularFile
@@ -11,7 +10,7 @@ import kotlin.io.path.isRegularFile
 /**
  * A single file watcher.
  */
-internal class FileWatcher(path: Path) : WatcherBase(path, Channel(Channel.CONFLATED)) {
+internal class FileWatcher(path: Path, listener: FileChangeListener) : WatcherBase(path, listener) {
   init {
     require(path.isRegularFile()) { "Provided path is not a file." }
   }
@@ -37,42 +36,39 @@ internal class FileWatcher(path: Path) : WatcherBase(path, Channel(Channel.CONFL
     watch()
   }
 
-  @OptIn(DelicateCoroutinesApi::class)
   private fun watch() = watchScope.launch {
-    coroutineContext.job.invokeOnCompletion { close() }
+    val job = coroutineContext.job.apply { invokeOnCompletion { stop() } }
 
-    channel.send(FileChangedEventImpl(path, FileChangedEventType.INITIALIZED))
-
-    while (!isClosedForSend) {
+    while (!job.isCancelled) {
       val watchingKey = runCatching { watchService.take() }.getOrElse {
         if (it is ClosedWatchServiceException || it is InterruptedException) null else throw it
       } ?: break
 
-      if (isClosedForSend) break
-
       val watchingDir = watchingKey.watchable() as? Path ?: break
-      watchingKey.pollEvents().forEach { changeEvent ->
-        val changedPath = watchingDir.resolve(changeEvent.context() as Path)
-        if (changedPath.absolutePathString() != absolutePathString) return@forEach
+      watchingKey.pollEvents().forEach { event ->
+        val eventPath = watchingDir.resolve(event.context() as Path)
+        if (eventPath.absolutePathString() != absolutePathString) return@forEach
 
-        val eventType = when (changeEvent.kind()) {
-          StandardWatchEventKinds.ENTRY_CREATE -> FileChangedEventType.CREATED
-          StandardWatchEventKinds.ENTRY_DELETE -> FileChangedEventType.DELETED
-          else -> FileChangedEventType.MODIFIED
+        launch {
+          when (event.kind()) {
+            StandardWatchEventKinds.ENTRY_CREATE -> listener.onPathCreated(eventPath)
+            StandardWatchEventKinds.ENTRY_DELETE -> {
+              listener.onPathDeleted(eventPath)
+              stop()
+            }
+
+            else -> listener.onPathModified(eventPath)
+          }
         }
-        channel.send(FileChangedEventImpl(changedPath, eventType))
-
-        if (eventType == FileChangedEventType.DELETED) close()
       }
 
       watchingKey.reset()
     }
   }
 
-  override fun close(cause: Throwable?): Boolean {
+  override fun stop() {
     registeredKey.cancel()
     watchService.close()
-    watchScope.coroutineContext[Job]?.cancel()
-    return channel.close(cause)
+    watchScope.cancel()
   }
 }

@@ -2,8 +2,7 @@ package me.just7mile.fileindexer.impl.watcher
 
 import com.sun.nio.file.SensitivityWatchEventModifier
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import me.just7mile.fileindexer.FileChangedEventType
+import me.just7mile.fileindexer.FileChangeListener
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -12,7 +11,7 @@ import kotlin.io.path.isDirectory
 /**
  * Recursive directory watcher.
  */
-internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
+internal class DirWatcher(path: Path, listener: FileChangeListener) : WatcherBase(path, listener) {
   init {
     require(path.isDirectory()) { "Provided path is not a directory." }
   }
@@ -21,7 +20,7 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
   private val watchService: WatchService = FileSystems.getDefault().newWatchService()
 
   private val registeredKeys = ConcurrentLinkedQueue<WatchKey>()
-  private val treeChangeEventType = listOf(FileChangedEventType.CREATED, FileChangedEventType.DELETED)
+  private val treeChangeEventKinds = listOf(StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE)
 
   private val fileVisitor = object : SimpleFileVisitor<Path>() {
     override fun preVisitDirectory(dir: Path?, attrs: BasicFileAttributes?): FileVisitResult {
@@ -45,42 +44,46 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
     watch()
   }
 
-  private fun registerKeys() {
-    resetKeys()
-
-    Files.walkFileTree(path, fileVisitor)
-  }
-
-  @OptIn(DelicateCoroutinesApi::class)
   private fun watch() = watchScope.launch {
-    coroutineContext.job.invokeOnCompletion { close() }
+    val job = coroutineContext.job.apply { invokeOnCompletion { stop() } }
 
-    channel.send(FileChangedEventImpl(path, FileChangedEventType.INITIALIZED))
-
-    while (!isClosedForSend) {
+    while (!job.isCancelled) {
       val watchingKey = runCatching { watchService.take() }.getOrElse {
         if (it is ClosedWatchServiceException || it is InterruptedException) null else throw it
       } ?: break
 
-      if (isClosedForSend) break
-
       val watchingDir = watchingKey.watchable() as? Path ?: break
-      var hasTreeChanged = false
-      val events = watchingKey.pollEvents().map { changeEvent ->
-        val changedPath = watchingDir.resolve(changeEvent.context() as Path)
-        val eventType = when (changeEvent.kind()) {
-          StandardWatchEventKinds.ENTRY_CREATE -> FileChangedEventType.CREATED
-          StandardWatchEventKinds.ENTRY_DELETE -> FileChangedEventType.DELETED
-          else -> FileChangedEventType.MODIFIED
-        }
-        if (changedPath.isDirectory() && eventType in treeChangeEventType) hasTreeChanged = true
-        FileChangedEventImpl(changedPath, eventType)
+      val events = watchingKey.pollEvents()
+      val hasTreeChanged = events.any { event ->
+        val eventPath = watchingDir.resolve(event.context() as Path)
+        eventPath.isDirectory() && event.kind() in treeChangeEventKinds
       }
       watchingKey.reset()
 
       if (hasTreeChanged) registerKeys()
-      events.forEach { channel.send(it) }
+
+      events.forEach { event ->
+        val eventPath = watchingDir.resolve(event.context() as Path)
+        launch {
+          when (event.kind()) {
+            StandardWatchEventKinds.ENTRY_CREATE -> listener.onPathCreated(eventPath)
+            StandardWatchEventKinds.ENTRY_DELETE -> listener.onPathDeleted(eventPath)
+            else -> listener.onPathModified(eventPath)
+          }
+        }
+      }
     }
+  }
+
+  override fun stop() {
+    resetKeys()
+    watchService.close()
+    watchScope.cancel()
+  }
+
+  private fun registerKeys() {
+    resetKeys()
+    Files.walkFileTree(path, fileVisitor)
   }
 
   private fun resetKeys() {
@@ -88,12 +91,5 @@ internal class DirWatcher(path: Path) : WatcherBase(path, Channel()) {
       forEach { it.cancel() }
       clear()
     }
-  }
-
-  override fun close(cause: Throwable?): Boolean {
-    resetKeys()
-    watchService.close()
-    watchScope.coroutineContext[Job]?.cancel()
-    return channel.close(cause)
   }
 }

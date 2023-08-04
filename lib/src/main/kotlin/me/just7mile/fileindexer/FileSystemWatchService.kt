@@ -1,6 +1,5 @@
 package me.just7mile.fileindexer
 
-import kotlinx.coroutines.channels.Channel
 import java.nio.file.Path
 
 /**
@@ -11,7 +10,7 @@ interface FileSystemWatchService {
   /**
    * Starts watching the provided [path].
    */
-  fun startWatching(path: Path): Channel<FileChangedEvent>
+  fun startWatching(path: Path, listener: FileChangeListener)
 
   /**
    * Stops watching the provided [path].

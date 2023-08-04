@@ -1,7 +1,6 @@
 package me.just7mile.fileindexer.impl.watcher
 
-import kotlinx.coroutines.channels.Channel
-import me.just7mile.fileindexer.FileChangedEvent
+import me.just7mile.fileindexer.FileChangeListener
 import me.just7mile.fileindexer.FileSystemWatchService
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
@@ -20,23 +19,22 @@ internal object FileSystemWatchServiceImpl : FileSystemWatchService {
    */
   private val watchers = ConcurrentHashMap<String, WatcherBase>()
 
-  override fun startWatching(path: Path): Channel<FileChangedEvent> {
+  override fun startWatching(path: Path, listener: FileChangeListener) {
     require(path.exists()) { "Path does not exists." }
 
-    val watcher = if (path.isDirectory()) DirWatcher(path) else FileWatcher(path)
+    val watcher = if (path.isDirectory()) DirWatcher(path, listener) else FileWatcher(path, listener)
     val absolutePath = path.absolutePathString()
     watchers[absolutePath] = watcher
-    return watcher
   }
 
   override fun stopWatching(path: Path) {
     val absolutePath = path.absolutePathString()
-    watchers.remove(absolutePath)?.cancel()
+    watchers.remove(absolutePath)?.stop()
   }
 
   override fun clear() {
     watchers.apply {
-      forEach { (_, watcher) -> watcher.cancel() }
+      forEach { (_, watcher) -> watcher.stop() }
       clear()
     }
   }

@@ -1,8 +1,6 @@
 package me.just7mile.fileindexer.impl
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import me.just7mile.fileindexer.*
@@ -63,6 +61,44 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
    * Mutex for controlling [currentState] access.
    */
   private val currentStateMutex = Mutex()
+
+  /**
+   * File change listener.
+   */
+  private val fileChangeListener = object : FileChangeListener {
+    /**
+     * When a new path created:
+     * - If it is a directory then tries recursively index its subtree.
+     * - Otherwise, it parses and indexes the file.
+     */
+    override fun onPathCreated(path: Path) {
+      if (path.isDirectory()) {
+        scope.launch { addDirForIndexing(path) }
+      } else if (path.isPlainTextFile()) {
+        scope.launch { addFileIndexes(path.toFile()) }
+      }
+    }
+
+    /**
+     * When a path modified:
+     * - If it is a directory then ignore it.
+     * - Otherwise, update the [indexes] with the new file content.
+     */
+    override fun onPathModified(path: Path) {
+      if (path.isPlainTextFile()) {
+        scope.launch { updateFileIndexes(path.toFile()) }
+      }
+    }
+
+    /**
+     * When a path deleted:
+     * - If it is a directory then removes its subtree from indexing.
+     * - Otherwise, removes the file from the [indexes].
+     */
+    override fun onPathDeleted(path: Path) {
+      scope.launch { removePathFromIndexing(path) }
+    }
+  }
 
   override suspend fun getCurrentState(): FileIndexerState = currentStateMutex.withLock { currentState }
 
@@ -163,10 +199,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
       addFileIndexes(path.toFile())
     }
 
-    val watcher = watchService.startWatching(path)
-    watcher.receive() // wait for FileChangedEventType.INITIALIZED event.
-
-    scope.launch { listenToWatcher(watcher) }
+    watchService.startWatching(path, fileChangeListener)
   }
 
   /**
@@ -188,8 +221,10 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
 
   /**
    * Removes path from indexing.
+   * It is necessary to remove path and its sub-paths,
+   * because when a path is deleted it is impossible to know whether it was folder or a regular file.
    *
-   *  @param path to add for indexing.
+   *  @param path to remove from indexing.
    */
   private fun removePathFromIndexing(path: Path) {
     watchService.stopWatching(path)
@@ -197,67 +232,6 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
     val absolutePath = path.toAbsolutePath()
     pathsToIndex.removeIf { it.toAbsolutePath().startsWith(absolutePath) }
     removeIndexes(path)
-  }
-
-  /**
-   * Listens to the file changes emitted by the file watcher, and reacts (re-indexes) to the file changes.
-   *
-   * @param watcher is the file watcher to listen to.
-   */
-  @OptIn(DelicateCoroutinesApi::class)
-  private suspend fun listenToWatcher(watcher: Channel<FileChangedEvent>) {
-    while (!watcher.isClosedForReceive) {
-      try {
-        val event = watcher.receive()
-        when (event.type) {
-          FileChangedEventType.INITIALIZED -> Unit
-          FileChangedEventType.CREATED -> newPathReceived(event.path)
-          FileChangedEventType.MODIFIED -> modifiedPathReceived(event.path)
-          FileChangedEventType.DELETED -> deletedPathReceived(event.path)
-        }
-      } catch (_: ClosedReceiveChannelException) {
-        break
-      }
-    }
-  }
-
-  /**
-   * Invoked when a new path created inside a file watcher.
-   * - If it is a directory then tries recursively index its subtree.
-   * - Otherwise, it parses and indexes the file.
-   *
-   *  @param path created path.
-   */
-  private fun newPathReceived(path: Path) {
-    if (path.isDirectory()) {
-      scope.launch { addDirForIndexing(path) }
-    } else if (path.isPlainTextFile()) {
-      scope.launch { addFileIndexes(path.toFile()) }
-    }
-  }
-
-  /**
-   * Invoked when a path modified inside a file watcher.
-   * - If it is a directory then ignore it.
-   * - Otherwise, update the [indexes] with the new file content.
-   *
-   *  @param path modified path.
-   */
-  private fun modifiedPathReceived(path: Path) {
-    if (path.isPlainTextFile()) {
-      scope.launch { updateFileIndexes(path.toFile()) }
-    }
-  }
-
-  /**
-   * Invoked when a path deleted inside a file watcher.
-   * - If it is a directory then removes its subtree from indexing.
-   * - Otherwise, removes the file from the [indexes].
-   *
-   *  @param path deleted path.
-   */
-  private fun deletedPathReceived(path: Path) {
-    scope.launch { removePathFromIndexing(path) }
   }
 
   /**
@@ -278,7 +252,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
    * This is not very efficient, but has to be done this way, because it is not possible to get
    * the specific part of the changed file.
    * Another solution would be to store file indexes and use Myers algorithm to find the difference. But, this solution
-   * is not memory efficient as it would require to store a copy of each file in the memory or in the storage.
+   * is not memory efficient as it would require to store a copy of each file in the memory or in a storage.
    *
    * @param file to update its indexes.
    */

@@ -1,7 +1,7 @@
 package me.just7mile.fileindexer.impl.watcher
 
 import kotlinx.coroutines.channels.Channel
-import me.just7mile.fileindexer.FileChangedEvent
+import me.just7mile.fileindexer.FileChangeListener
 import java.nio.file.Path
 
 
@@ -12,7 +12,11 @@ import java.nio.file.Path
  * It is extended by [DirWatcher] and [FileWatcher].
  *
  * @param path to watch. Can be either file or folder.
- * @param channel is used for delegating [Channel] implementation.
+ * @param listener which listens to the change events.
  */
-internal sealed class WatcherBase(protected val path: Path, protected val channel: Channel<FileChangedEvent>) :
-  Channel<FileChangedEvent> by channel
+internal sealed class WatcherBase(protected val path: Path, protected val listener: FileChangeListener) {
+  /**
+   * Stops the watcher.
+   */
+  abstract fun stop()
+}

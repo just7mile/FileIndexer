@@ -9,9 +9,9 @@ import me.just7mile.fileindexer.impl.InvertedIndexFileIndexer
  */
 class FileIndexerBuilder {
   /**
-   * The lexer for parsing a file into words.
+   * The tokenizer for parsing a file into words.
    */
-  internal var wordLexer: WordLexer? = null
+  internal var tokenizer: Tokenizer? = null
 
   /**
    * The file system watcher for watching file and directory changes.
@@ -19,12 +19,12 @@ class FileIndexerBuilder {
   internal var watchService: FileSystemWatchService? = null
 
   /**
-   * Sets the lexer for parsing a file into words.
+   * Sets the tokenizer for parsing a file into words.
    *
-   * @param lexer the new word lexer.
+   * @param tokenizer the new word tokenizer.
    */
-  fun setWordLexer(lexer: WordLexer) = apply {
-    wordLexer = lexer
+  fun setTokenizer(tokenizer: Tokenizer) = apply {
+    this.tokenizer = tokenizer
   }
 
   /**

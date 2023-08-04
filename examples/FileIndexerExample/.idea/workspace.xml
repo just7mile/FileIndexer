@@ -8,11 +8,14 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/libs/file-indexer-1.0-SNAPSHOT.jar" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/kotlin/Main.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Main.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexer.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexerState.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexerState.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexerBuilder.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/FileIndexerBuilder.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/WordLexer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/Tokenizer.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/WordLocation.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/Token.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexer.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/watcher/DirWatcher.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/watcher/DirWatcher.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/WordLexerImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/TokenizerImpl.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/WordLocationImpl.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/main/kotlin/me/just7mile/fileindexer/impl/TokenImpl.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../lib/src/test/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexerTest.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/test/kotlin/me/just7mile/fileindexer/impl/InvertedIndexFileIndexerTest.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../lib/src/test/kotlin/me/just7mile/fileindexer/impl/WordLexerImplTest.kt" beforeDir="false" afterPath="$PROJECT_DIR$/../../lib/src/test/kotlin/me/just7mile/fileindexer/impl/TokenizerImplTest.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

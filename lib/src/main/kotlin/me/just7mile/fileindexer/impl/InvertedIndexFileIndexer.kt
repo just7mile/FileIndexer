@@ -10,7 +10,7 @@ import me.just7mile.fileindexer.impl.watcher.FileSystemWatchServiceImpl
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
@@ -21,9 +21,9 @@ import kotlin.io.path.listDirectoryEntries
  */
 internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndexer {
   /**
-   * The lexer for parsing a file into words.
+   * The tokenizer for parsing a file into words.
    */
-  private val wordLexer: WordLexer
+  private val tokenizer: Tokenizer
 
   /**
    * The file system watcher for watching file and directory changes.
@@ -31,7 +31,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   private var watchService: FileSystemWatchService
 
   init {
-    wordLexer = builder.wordLexer ?: WordLexerImpl
+    tokenizer = builder.tokenizer ?: TokenizerImpl
     watchService = builder.watchService ?: FileSystemWatchServiceImpl
   }
 
@@ -52,7 +52,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   /**
    * List of files to index.
    */
-  private val pathsToIndex = ConcurrentLinkedDeque<Path>()
+  private val pathsToIndex = ConcurrentLinkedQueue<Path>()
 
   /**
    * Current state of the indexer.
@@ -313,22 +313,20 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   }
 
   /**
-   * Parses the [file] content, converts all words to lowercase and groups similar words and sorts the locations.
+   * Parses the [file] content, converts all words to lowercase, groups similar words, and sorts the locations.
    *
    * @param file to parse.
    * @return map of each word with the list of locations.
    */
   private fun getFileWords(file: File): Map<String, List<WordLocation>> {
-    val result = mutableMapOf<String, List<WordLocation>>()
-    wordLexer.parse(file).forEach { (word, locations) ->
-      if (locations.isNotEmpty()) {
-        val lowercase = word.lowercase()
-        result[lowercase] = (result[lowercase] ?: listOf()) + locations
-      }
+    val result = mutableMapOf<String, MutableList<WordLocation>>()
+    tokenizer.tokenize(file).forEach { token ->
+      val lowercase = token.word.lowercase()
+      result[lowercase] = (result[lowercase] ?: mutableListOf()).apply { add(WordLocationImpl(token.line, token.col)) }
     }
 
     return result.mapValues { (_, locations) ->
-      locations.sortedWith { a, b -> if (a.row == b.row) a.col - b.col else a.row - b.row }
+      locations.sortedWith { a, b -> if (a.line == b.line) a.col - b.col else a.line - b.line }
     }
   }
 }

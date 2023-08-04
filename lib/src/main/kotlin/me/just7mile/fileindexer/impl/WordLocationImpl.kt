@@ -5,7 +5,7 @@ import me.just7mile.fileindexer.WordLocation
 /**
  * Implementation of [WordLocation].
  */
-internal data class WordLocationImpl(
-  override val row: Int,
+data class WordLocationImpl(
+  override val line: Int,
   override val col: Int,
 ) : WordLocation

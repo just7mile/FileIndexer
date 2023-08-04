@@ -157,7 +157,7 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       assertEquals(1, firstResult.locations.size, "word is found in only 1 location in the file.txt")
 
       val firstLocation = firstResult.locations.first()
-      assertEquals(1, firstLocation.row, "location row in file.txt is 1")
+      assertEquals(1, firstLocation.line, "location line in file.txt is 1")
       assertEquals(7, firstLocation.col, "location col in file.txt is 7")
 
       fileIndexer.cancel()
@@ -192,17 +192,17 @@ class InvertedIndexFileIndexerTest : TestFolderProvider() {
       assertEquals(1, file1Result.locations.size, "1 locations in file-1.txt")
 
       val file1Location = file1Result.locations.first()
-      assertEquals(1, file1Location.row, "location row in file-1.txt is 1")
+      assertEquals(1, file1Location.line, "location line in file-1.txt is 1")
       assertEquals(7, file1Location.col, "location col in file-1.txt is 7")
 
       assertEquals(2, file2Result.locations.size, "2 locations in file-2.txt")
 
       val file2FirstLocation = file2Result.locations.first()
-      assertEquals(1, file2FirstLocation.row, "first location row in file-2.txt is 1")
+      assertEquals(1, file2FirstLocation.line, "first location line in file-2.txt is 1")
       assertEquals(1, file2FirstLocation.col, "first location col in file-2.txt is 1")
 
       val file2SecondLocation = file2Result.locations[1]
-      assertEquals(1, file2FirstLocation.row, "first location row in file-2.txt is 1")
+      assertEquals(1, file2FirstLocation.line, "first location line in file-2.txt is 1")
       assertEquals(7, file2SecondLocation.col, "first location col in file-2.txt is 2")
 
       fileIndexer.cancel()

@@ -25,7 +25,7 @@ fun main() = runBlocking {
       result.forEach {
         println(" [${it.file.absolutePath}] (${it.locations.size} appearances):")
         it.locations.forEachIndexed { index, location ->
-          println("\t ${index + 1}. On line ${location.row} column ${location.col}")
+          println("\t ${index + 1}. On line ${location.line} column ${location.col}")
         }
       }
     }

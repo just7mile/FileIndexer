@@ -11,8 +11,8 @@ import java.nio.file.Path
  *
  * It is extended by [DirWatcher] and [FileWatcher].
  *
- * @param path to watch. Can be either file or folder.
- * @param listener which listens to the change events.
+ * @property path the path to watch. Can be either file or folder.
+ * @property listener the listener which listens to the change events.
  */
 internal sealed class WatcherBase(protected val path: Path, protected val listener: FileChangeListener) {
   /**

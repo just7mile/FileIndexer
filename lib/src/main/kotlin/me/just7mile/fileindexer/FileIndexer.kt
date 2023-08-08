@@ -15,14 +15,14 @@ interface FileIndexer {
   /**
    * Starts the indexing process.
    *
-   * @param initialPathsToIndex is the list of paths to start with.
+   * @param initialPathsToIndex the list of paths to start with.
    */
   suspend fun start(initialPathsToIndex: List<Path>? = null)
 
   /**
    * Adds a new path to index.
    *
-   * @param path to index.
+   * @param path the path to index.
    */
   suspend fun addPath(path: Path)
 
@@ -30,15 +30,15 @@ interface FileIndexer {
    * Removes a path from indexing.
    * The path should have been added during class initialization, or by the [addPath] function.
    *
-   * @param path to remove.
+   * @param path the path to remove.
    */
   suspend fun removePath(path: Path)
 
   /**
    * Searches a word in the indexed files.
    *
-   * @param word to search (case-insensitive).
-   * @return list of [WordSearchResult] which contains file and list of locations of the [word] in the file.
+   * @param word the word to search (case-insensitive).
+   * @return a list of [WordSearchResult] which contains file and list of locations of the [word] in the file.
    */
   suspend fun searchWord(word: String): List<WordSearchResult>
 

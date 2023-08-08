@@ -9,11 +9,16 @@ interface FileSystemWatchService {
 
   /**
    * Starts watching the provided [path].
+   *
+   * @param path the path to watch.
+   * @param listener the listener that listens to file change events.
    */
   fun startWatching(path: Path, listener: FileChangeListener)
 
   /**
    * Stops watching the provided [path].
+   *
+   * @param path the path to stop watching.
    */
   fun stopWatching(path: Path)
 

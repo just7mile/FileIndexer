@@ -63,12 +63,12 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   private val currentStateMutex = Mutex()
 
   /**
-   * File change listener.
+   * File change listener passed to [FileSystemWatchService.startWatching].
    */
   private val fileChangeListener = object : FileChangeListener {
     /**
      * When a new path created:
-     * - If it is a directory then tries recursively index its subtree.
+     * - If it is a directory then tries index its subtree, recursively.
      * - Otherwise, it parses and indexes the file.
      */
     override fun onPathCreated(path: Path) {
@@ -91,9 +91,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
     }
 
     /**
-     * When a path deleted:
-     * - If it is a directory then removes its subtree from indexing.
-     * - Otherwise, removes the file from the [indexes].
+     * Removes deleted path from indexing.
      */
     override fun onPathDeleted(path: Path) {
       scope.launch { removePathFromIndexing(path) }
@@ -144,7 +142,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
 
   /**
    * Returns results sorted descending by the number of appearance in a file.
-   * Thus, files that contain the word [word] the most are located first.
+   * Thus, files that contain the [word] the most are located first.
    */
   override suspend fun searchWord(word: String): List<WordSearchResult> {
     if (getCurrentState() != FileIndexerState.READY) {
@@ -176,21 +174,9 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   }
 
   /**
-   * Checks if the path is eligible for indexing.
-   *
-   * @param path to validate.
-   */
-  private fun validatePath(path: Path) {
-    require(path.exists()) { "Path not found: '${path.absolutePathString()}'." }
-    require(path.isDirectory() || path.isPlainTextFile()) {
-      "Indexing is not supported for the content of the file located at '${path.absolutePathString()}'."
-    }
-  }
-
-  /**
    * Adds [path] for indexing and starts a watcher for it.
    *
-   *  @param path to add for indexing.
+   *  @param path the path to add for indexing.
    */
   private suspend fun addPathForIndexing(path: Path) {
     if (path.isDirectory()) {
@@ -203,9 +189,22 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   }
 
   /**
-   * Adds directory for indexing, recursively.
+   * Removes path from indexing - stops watcher and removes entries from [indexes].
    *
-   *  @param path to add for indexing.
+   *  @param path the path to remove from indexing.
+   */
+  private fun removePathFromIndexing(path: Path) {
+    watchService.stopWatching(path)
+
+    val absolutePath = path.toAbsolutePath()
+    pathsToIndex.removeIf { it.toAbsolutePath().startsWith(absolutePath) }
+    removeIndexes(path)
+  }
+
+  /**
+   * Recursively adds a directory and its contents for indexing.
+   *
+   *  @param path the directory to add for indexing.
    */
   private suspend fun addDirForIndexing(path: Path) {
     coroutineScope {
@@ -220,24 +219,9 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   }
 
   /**
-   * Removes path from indexing.
-   * It is necessary to remove path and its sub-paths,
-   * because when a path is deleted it is impossible to know whether it was folder or a regular file.
-   *
-   *  @param path to remove from indexing.
-   */
-  private fun removePathFromIndexing(path: Path) {
-    watchService.stopWatching(path)
-
-    val absolutePath = path.toAbsolutePath()
-    pathsToIndex.removeIf { it.toAbsolutePath().startsWith(absolutePath) }
-    removeIndexes(path)
-  }
-
-  /**
    * Resolves indexes of the provided file, and adds them to the [indexes].
    *
-   * @param file to index.
+   * @param file the file to index.
    */
   private fun addFileIndexes(file: File) {
     val words = getFileWords(file)
@@ -254,7 +238,7 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
    * Another solution would be to store file indexes and use Myers algorithm to find the difference. But, this solution
    * is not memory efficient as it would require to store a copy of each file in the memory or in a storage.
    *
-   * @param file to update its indexes.
+   * @param file the file to update its indexes.
    */
   private fun updateFileIndexes(file: File) {
     val words = getFileWords(file)
@@ -272,9 +256,11 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   }
 
   /**
-   * Removes directory indexes recursively from the [indexes].
+   * Removes path and its sub-paths indexes from the [indexes].
+   * It is necessary to remove path and its sub-paths, because
+   * if the path is already deleted, it is impossible to determine whether it was a folder or a regular file.
    *
-   * @param path of the directory to remove its indexes.
+   * @param path the path to remove its indexes.
    */
   private fun removeIndexes(path: Path) {
     val absolutePath = path.toAbsolutePath()
@@ -289,8 +275,8 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   /**
    * Parses the [file] content, converts all words to lowercase, groups similar words, and sorts the locations.
    *
-   * @param file to parse.
-   * @return map of each word with the list of locations.
+   * @param file the to parse.
+   * @return a map of each word with the list of its locations.
    */
   private fun getFileWords(file: File): Map<String, List<WordLocation>> {
     val result = mutableMapOf<String, MutableList<WordLocation>>()
@@ -301,6 +287,18 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
 
     return result.mapValues { (_, locations) ->
       locations.sortedWith { a, b -> if (a.line == b.line) a.col - b.col else a.line - b.line }
+    }
+  }
+
+  /**
+   * Checks if the path is eligible for indexing.
+   *
+   * @param path the path to validate.
+   */
+  private fun validatePath(path: Path) {
+    require(path.exists()) { "Path not found: '${path.absolutePathString()}'." }
+    require(path.isDirectory() || path.isPlainTextFile()) {
+      "Indexing is not supported for the content of the file located at '${path.absolutePathString()}'."
     }
   }
 }

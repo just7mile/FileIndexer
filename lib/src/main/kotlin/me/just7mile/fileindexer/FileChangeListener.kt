@@ -8,19 +8,19 @@ import java.nio.file.Path
 interface FileChangeListener {
   /**
    * Invoked when a new path created.
-   * @param path created path.
+   * @param path the created path.
    */
   fun onPathCreated(path: Path)
 
   /**
    * Invoked when a path modified.
-   * @param path modified path.
+   * @param path the modified path.
    */
   fun onPathModified(path: Path)
 
   /**
    * Invoked when a path deleted.
-   * @param path deleted path.
+   * @param path the deleted path.
    */
   fun onPathDeleted(path: Path)
 }

@@ -10,8 +10,8 @@ interface Tokenizer {
   /**
    * Parses provided file into words.
    *
-   * @param file to parse.
-   * @return returns a list of parsed tokens [Token].
+   * @param file the file to parse.
+   * @return a list of parsed tokens [Token].
    */
   fun tokenize(file: File): List<Token>
 }

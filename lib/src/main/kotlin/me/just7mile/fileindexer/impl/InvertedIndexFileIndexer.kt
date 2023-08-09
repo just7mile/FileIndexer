@@ -124,12 +124,15 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
   override suspend fun addPath(path: Path) {
     validatePath(path)
 
-    if (getCurrentState() == FileIndexerState.CANCELED) {
-      throw IllegalStateException("Adding paths is not allowed after the indexer is canceled.")
-    }
+    val isIndexerReady = currentStateMutex.withLock {
+      if (currentState == FileIndexerState.CANCELED) {
+        throw IllegalStateException("Adding paths is not allowed after the indexer is canceled.")
+      }
 
-    pathsToIndex.add(path)
-    if (getCurrentState() == FileIndexerState.READY) addPathForIndexing(path)
+      pathsToIndex.add(path)
+      currentState == FileIndexerState.READY
+    }
+    if (isIndexerReady) addPathForIndexing(path)
   }
 
   override suspend fun removePath(path: Path) {
@@ -145,8 +148,14 @@ internal class InvertedIndexFileIndexer(builder: FileIndexerBuilder) : FileIndex
    * Thus, files that contain the [word] the most are located first.
    */
   override suspend fun searchWord(word: String): List<WordSearchResult> {
-    if (getCurrentState() != FileIndexerState.READY) {
-      throw IllegalStateException("Searching is not allowed til the indexer is ready.")
+    currentStateMutex.withLock {
+      if (currentState == FileIndexerState.CREATED) {
+        throw IllegalStateException("Searching is not allowed til the indexer is ready.")
+      }
+
+      if (currentState == FileIndexerState.CANCELED) {
+        throw IllegalStateException("Searching is not allowed after the indexer is canceled.")
+      }
     }
 
     return indexes[word.lowercase()]
